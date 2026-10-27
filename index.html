@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Điểm danh lớp học phần – SIU</title>
+<style>
+:root{
+  --navy:#1e3a8a; --blue:#3b82f6; --blue2:#2563eb; --sky:#bae6fd;
+  --bg:#fafafa; --card:#ffffff; --text:#0f1b3d; --muted:#64748b; --line:#dbe6ff;
+  --ok:#16a34a; --bad:#dc2626; --warn:#d97706;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--text);background:var(--bg)}
+body{min-height:100vh;min-height:100dvh;overflow-x:hidden}
+.view{display:none}
+.view.active{display:block}
+button{font:inherit;cursor:pointer}
+video{display:block;background:transparent}
+
+/* ============ LOGIN ============ */
+#login{min-height:100dvh;background:var(--bg);display:none;align-items:center;justify-content:center;padding:12px 16px 20px;position:relative;overflow:hidden}
+#login.active{display:flex}
+.login-wrap{width:100%;max-width:420px;position:relative}
+/* Khung phát clip: nền clip là trắng #fafafa nên hoà vào nền trang, viền được làm mờ */
+.stage{position:relative;width:min(106vw,620px);aspect-ratio:16/9;left:50%;transform:translateX(-50%);margin-bottom:-2px;z-index:2;pointer-events:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent),linear-gradient(180deg,transparent,#000 7%);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent),linear-gradient(180deg,transparent,#000 7%);
+  mask-composite:intersect}
+.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .28s ease}
+.stage video.on{opacity:1}
+.flyletter{position:fixed;left:0;top:0;z-index:50;font-weight:800;font-size:22px;color:var(--navy);pointer-events:none;text-shadow:0 2px 8px #3b82f655;will-change:transform}
+.card{background:var(--card);border:1px solid #e8eefc;border-radius:22px;padding:24px 22px 20px;
+  box-shadow:0 20px 50px -24px #1e3a8a66;position:relative;z-index:1}
+.card h1{font-size:22px;margin:0 0 2px;text-align:center}
+.card p.sub{margin:0 0 16px;text-align:center;color:var(--muted);font-size:14px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;color:#334155;margin-bottom:6px}
+.inwrap{position:relative}
+.inwrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--blue2);opacity:.8}
+.inwrap input{width:100%;height:50px;border-radius:14px;border:1.5px solid var(--line);background:#fff;padding:0 14px 0 42px;
+  font:inherit;font-size:16px;color:var(--text);outline:none;transition:.2s}
+.inwrap input:focus{border-color:var(--blue);box-shadow:0 0 0 4px #3b82f629}
+.inwrap input.err{border-color:var(--bad);animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.remember{display:flex;align-items:center;gap:8px;font-size:14px;color:#475569;margin:2px 0 16px}
+.remember input{width:18px;height:18px;accent-color:var(--blue2)}
+.btn{width:100%;height:50px;border:0;border-radius:14px;color:#fff;font-weight:700;font-size:16px;
+  background:linear-gradient(135deg,var(--blue),var(--navy));box-shadow:0 8px 20px -8px var(--blue2);
+  transition:transform .12s,box-shadow .2s,filter .2s;position:relative;overflow:hidden}
+.btn:hover{filter:brightness(1.08);box-shadow:0 12px 26px -8px var(--blue2)}
+.btn:active{transform:translateY(2px) scale(.99)}
+.btn:disabled{background:#cbd5e1;box-shadow:none;cursor:not-allowed;filter:none;color:#64748b}
+.errmsg{color:var(--bad);font-size:13px;text-align:center;margin-top:10px;min-height:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ============ CYBER (màn chờ + nút logo) ============ */
+#cyber{position:fixed;inset:0;background:radial-gradient(circle at 50% 40%,#0b1a4a 0,#03071a 75%);z-index:100;display:none;overflow:hidden;
+  touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#cyber.active{display:block;animation:fadeIn .35s ease both}
+#cyber.out{animation:fadeOut .7s ease forwards}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeOut{to{opacity:0}}
+#fx{position:absolute;inset:0;width:100%;height:100%}
+#dstage{position:absolute;inset:0;pointer-events:none}   /* không đặt z-index: để mix-blend-mode ăn với lưới điện phía sau */
+#dstage video{position:absolute;opacity:0;transition:opacity .18s ease;mix-blend-mode:screen}
+#dstage video.on{opacity:1}
+#dstage video.full{inset:0;width:100%;height:100%;object-fit:contain}
+#dstage video.zoom{transform:scale(1.55)}
+/* clip dọc 9:16: cao vừa màn hình, hai bên làm mờ để lưới điện phía sau lộ ra */
+#dstage video.tall{top:0;left:50%;height:100%;width:auto;aspect-ratio:9/16;transform:translateX(-50%);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent);mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent)}
+.flymsg{position:absolute;left:0;right:0;bottom:calc(9% + env(safe-area-inset-bottom));z-index:4;text-align:center;color:#bfdbfe;font-weight:600;font-size:15px;
+  opacity:0;transition:opacity .4s;pointer-events:none;text-shadow:0 0 12px #3b82f6}
+.flymsg.on{opacity:1}
+.flymsg i{display:inline-block;width:14px;height:14px;border:2px solid #3b82f6aa;border-top-color:#e0f2fe;border-radius:50%;vertical-align:-2px;margin-right:8px;animation:spin .8s linear infinite}
+#logoPos{position:absolute;z-index:5;left:50%;top:25%;width:0;height:0;pointer-events:none}
+#logoBtn{position:absolute;left:0;top:0;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:2px solid #7dd3fcaa;cursor:pointer;padding:0;
+  background:radial-gradient(circle at 35% 28%,#ffffff,#dbeafe 55%,#a9c7f7);
+  box-shadow:0 0 0 6px #3b82f61a,0 0 40px #3b82f6aa,0 8px 0 #12307a,0 12px 22px #000a;
+  transition:transform .12s,box-shadow .12s;opacity:0;transform:scale(.6);display:flex;align-items:center;justify-content:center;pointer-events:none}
+#logoPos.show #logoBtn{pointer-events:auto;animation:logoIn .8s cubic-bezier(.2,1.4,.4,1) forwards, pulse 2s .9s ease-in-out infinite}
+#logoBtn img{width:88%;height:88%;object-fit:contain;pointer-events:none;animation:wobble 2.4s ease-in-out infinite;filter:drop-shadow(0 2px 6px #1e3a8a55)}
+#logoBtn.down{transform:translateY(8px) scale(.93)!important;animation:none!important;opacity:1!important;
+  box-shadow:0 0 0 5px #3b82f633,0 0 26px #3b82f6aa,0 2px 0 #12307a,0 4px 10px #000a}
+@keyframes logoIn{to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 6px #3b82f61a,0 0 30px #3b82f688,0 8px 0 #12307a,0 12px 22px #000a}
+  50%{box-shadow:0 0 0 12px #3b82f622,0 0 60px #60a5fa,0 8px 0 #12307a,0 12px 22px #000a}}
+@keyframes wobble{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg) translateY(-3px)}}
+#hint{position:absolute;z-index:5;left:50%;top:10%;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;gap:2px;opacity:0;pointer-events:none;transition:opacity .4s}
+#hint.on{opacity:1}
+.bubble{background:#e0f2fe;color:#0c2a6b;font-weight:700;padding:8px 14px;border-radius:14px;font-size:15px;white-space:nowrap;box-shadow:0 0 18px #38bdf8aa}
+.arrow{font-size:22px;color:#7dd3fc;animation:point 1s ease-in-out infinite;filter:drop-shadow(0 0 8px #38bdf8)}
+@keyframes point{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+#cyber.pressed #hint{opacity:0}
+#flash{position:fixed;inset:0;z-index:150;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 55%,#fff 0,#9fd0ff 35%,#2563eb 80%)}
+#flash.go{animation:flash .55s ease-out}
+@keyframes flash{0%{opacity:0}25%{opacity:.95}100%{opacity:0}}
+
+/* ============ APP ============ */
+#app{background:#eef3ff;min-height:100dvh;padding-bottom:84px}
+.topbar{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,#1e3a8a,#2549b3);color:#fff;padding:14px 16px;
+  display:flex;align-items:center;gap:10px;box-shadow:0 6px 18px -8px #1e3a8a}
+.topbar .t{flex:1;min-width:0}
+.topbar b{display:block;font-size:17px}
+.topbar small{opacity:.85;font-size:12.5px}
+.topbar button{background:#ffffff26;border:1px solid #ffffff55;color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600}
+.container{max-width:560px;margin:0 auto;padding:14px 14px 0}
+.panel{background:#fff;border-radius:18px;padding:16px;box-shadow:0 8px 24px -14px #1e3a8a66;margin-bottom:12px;animation:rise .5s both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+.panel h2{margin:0 0 4px;font-size:17px;letter-spacing:.2px}
+.panel .meta{font-size:13px;color:#475569;line-height:1.5}
+.panel label.l{display:block;margin:12px 0 6px;font-size:13px;font-weight:600;color:#334155}
+select,input[type=date],input[type=search]{width:100%;height:46px;border:1.5px solid var(--line);border-radius:12px;padding:0 12px;font:inherit;font-size:15px;background:#fff;color:var(--text);outline:none}
+select:focus,input[type=date]:focus,input[type=search]:focus{border-color:var(--blue);box-shadow:0 0 0 3px #3b82f622}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{height:44px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-weight:600;color:#334155}
+.seg button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.note{margin-top:12px;background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.45}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{border-radius:14px;padding:10px 6px;text-align:center;border:1px solid}
+.stat b{display:block;font-size:26px;line-height:1.1}
+.stat span{font-size:12.5px;font-weight:600}
+.stat.ok{background:#dcfce7;border-color:#86efac;color:#166534}
+.stat.bad{background:#fee2e2;border-color:#fca5a5;color:#991b1b}
+.stat.warn{background:#fef3c7;border-color:#fcd34d;color:#92400e}
+.search{position:relative;margin-bottom:10px}
+.search input{padding-left:40px}
+.search:before{content:"🔍";position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px}
+.stu{background:#fff;border-radius:14px;padding:10px 12px;margin-bottom:8px;display:flex;align-items:center;gap:8px;border:1.5px solid transparent;
+  box-shadow:0 4px 14px -10px #1e3a8a88;transition:.2s}
+.stu .info{flex:1;min-width:0}
+.stu .nm{font-weight:700;font-size:15px}
+.stu .id{font-size:12.5px;color:var(--muted)}
+.stu button{height:38px;padding:0 12px;border-radius:10px;border:1.5px solid #cbd5e1;background:#fff;font-size:13px;font-weight:600;color:#334155;transition:.15s}
+.stu button:active{transform:scale(.95)}
+.stu.bad{border-color:#fca5a5;background:#fff5f5}
+.stu.bad .b-bad{background:var(--bad);border-color:var(--bad);color:#fff}
+.stu.warn{border-color:#fcd34d;background:#fffbeb}
+.stu.warn .b-warn{background:var(--warn);border-color:var(--warn);color:#fff}
+.ghost{width:100%;height:46px;border-radius:12px;border:1.5px solid #bfd0ff;background:#fff;color:var(--navy);font-weight:700;margin-bottom:10px}
+.ghost.sm{border-style:dashed}
+.bottombar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:#fff;border-top:1px solid var(--line);
+  padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;align-items:center;gap:12px;box-shadow:0 -8px 24px -16px #1e3a8a}
+.bottombar .sum{flex:1;font-size:13px;color:#334155;line-height:1.35}
+.bottombar .sum b{display:block;font-size:14px}
+.bottombar .btn{width:auto;min-width:96px;padding:0 22px;height:46px}
+.toast{position:fixed;left:50%;bottom:92px;transform:translate(-50%,20px);background:#0f172a;color:#fff;padding:11px 18px;border-radius:12px;
+  font-size:14px;opacity:0;pointer-events:none;transition:.3s;z-index:200;max-width:90vw;text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.hidden{display:none!important}
+.empty{text-align:center;color:var(--muted);padding:24px;font-size:14px}
+
+/* ============ GỬI XONG: clip ăn mừng ============ */
+#cheer{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;flex-direction:column;background:#fafafaf5;cursor:pointer;padding:16px}
+#cheer.on{display:flex;animation:fadeIn .25s ease both}
+#cheerStage{position:relative;width:min(640px,100%);aspect-ratio:16/9;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent),linear-gradient(180deg,transparent,#000 7%,#000 93%,transparent);-webkit-mask-composite:source-in;
+  mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent),linear-gradient(180deg,transparent,#000 7%,#000 93%,transparent);mask-composite:intersect}
+#cheerStage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .25s}
+#cheerStage video.on{opacity:1}
+#cheer b{color:var(--navy);font-size:20px;margin-top:6px;text-align:center;padding:0 20px}
+#cheer small{color:var(--muted);margin-top:6px}
+
+@media(max-width:640px){
+  .card{padding:20px 18px 16px}
+  .flymsg{font-size:14px}
+}
+@media(min-width:900px){.container{max-width:720px}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-iteration-count:1!important}}
+</style>
+</head>
+<body>
+
+<!-- ======================= 1. LOGIN ======================= -->
+<section id="login" class="view active">
+  <div class="login-wrap">
+    <div class="stage" id="stage" aria-hidden="true"></div>
+
+    <form class="card" id="loginForm" autocomplete="off" novalidate>
+      <h1>Đăng nhập lớp trưởng</h1>
+      <p class="sub">Nhập mã lớp học phần và mã PIN do Phòng Tuyển sinh &amp; CTSV gửi.</p>
+      <div class="field">
+        <label for="classId">Mã lớp học phần</label>
+        <div class="inwrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c3 2 9 2 12 0v-5"/></svg>
+          <input id="classId" placeholder="VD: 2BAS0005_TA121" autocapitalize="characters" spellcheck="false" enterkeyhint="next">
+        </div>
+      </div>
+      <div class="field">
+        <label for="pin">Mã PIN (6 số)</label>
+        <div class="inwrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="••••••" enterkeyhint="go">
+        </div>
+      </div>
+      <label class="remember"><input type="checkbox" id="remember" checked> Ghi nhớ trên thiết bị này</label>
+      <button class="btn" id="goBtn" type="submit">Vào lớp →</button>
+      <div class="errmsg" id="errMsg" role="alert"></div>
+    </form>
+  </div>
+</section>
+
+<!-- ======================= 2. MÀN CHỜ + CYBER ======================= -->
+<section id="cyber" class="view">
+  <canvas id="fx"></canvas>
+  <div id="dstage" aria-hidden="true"></div>
+  <div class="flymsg" id="flyMsg"><i></i>Đang tìm lớp, vui lòng chờ...</div>
+  <div id="hint"><span class="bubble">Nhấn vào nè!</span><span class="arrow">▼</span></div>
+  <div id="logoPos"><button id="logoBtn" aria-label="Nhấn để vào lớp"><img id="logoImg" alt="Logo SIU"></button></div>
+</section>
+<div id="flash"></div>
+
+<!-- ======================= 3. APP ======================= -->
+<section id="app" class="view">
+  <header class="topbar">
+    <div class="t"><b>Điểm danh lớp học phần</b><small>Phòng Tuyển sinh &amp; Công tác Sinh viên – SIU</small></div>
+    <button id="logoutBtn">Đổi lớp</button>
+  </header>
+  <main class="container">
+    <div class="panel">
+      <h2 id="clsName">—</h2>
+      <div class="meta" id="clsMeta"></div>
+
+      <label class="l" for="session">Buổi</label>
+      <select id="session"></select>
+
+      <label class="l">Buổi này</label>
+      <div class="seg" id="seg">
+        <button type="button" data-v="study" class="on">Có học</button>
+        <button type="button" data-v="off">Giảng viên nghỉ</button>
+      </div>
+
+      <label class="l" for="date">Ngày học</label>
+      <input type="date" id="date">
+
+      <div class="note">Em chép theo số điểm danh của giảng viên: chỉ chọn những bạn <b>VẮNG</b>. Bạn nào không chọn được tính là có mặt.</div>
+    </div>
+
+    <div id="listArea">
+      <div class="stats">
+        <div class="stat ok"><b id="nOk">0</b><span>Có mặt</span></div>
+        <div class="stat bad"><b id="nBad">0</b><span>Không phép</span></div>
+        <div class="stat warn"><b id="nWarn">0</b><span>Có phép</span></div>
+      </div>
+      <div class="search"><input type="search" id="q" placeholder="Tìm tên hoặc MSSV"></div>
+      <div id="list"></div>
+      <button class="ghost" id="clearAll">Bỏ chọn tất cả (cả lớp có mặt)</button>
+      <button class="ghost sm" id="reportWrong">⚠ Báo sai danh sách lớp</button>
+    </div>
+  </main>
+  <div class="bottombar">
+    <div class="sum"><b id="sumTop">Buổi 1 · Có học</b><span id="sumBot">Có mặt 0/0 · Vắng 0</span></div>
+    <button class="btn" id="sendBtn">Gửi</button>
+  </div>
+</section>
+
+<div id="cheer"><div id="cheerStage"></div><b id="cheerMsg">Đã gửi điểm danh!</b><small>Chạm để đóng</small></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   KẾT NỐI BACKEND (Google Apps Script)
+   Đổi tên 3 hàm dưới cho trùng với hàm trong Code.gs của bạn:
+     apiLogin(classId, pin)        -> { ok, message, cls:{name,term,code,size,teacher,leader}, sessions:[...], students:[{mssv,name,cls}] }
+     apiSubmit(payload)            -> { ok, message }
+     apiReportWrong(classId, text) -> { ok }
+   Khi chạy ngoài Apps Script (mở file thẳng trên trình duyệt) sẽ dùng DỮ LIỆU MẪU để xem thử.
+   ===================================================================== */
+const GAS = (typeof google !== 'undefined' && google.script && google.script.run);
+function callGas(fn, ...args){
+  return new Promise((resolve, reject)=>{
+    if(!GAS){ return setTimeout(()=>resolve(demo(fn,args)), 2600); }
+    google.script.run.withSuccessHandler(resolve).withFailureHandler(e=>reject(e)) [fn](...args);
+  });
+}
+function demo(fn,a){
+  if(fn==='apiLogin'){
+    if(!a[0]) return {ok:false,message:'Không tìm thấy lớp.'};
+    if(a[1]==='000000') return {ok:false,message:'Mã PIN không đúng.'};
+    const names=['Nguyễn Ngọc Gia Bảo','Nguyễn Văn Bắc','Lê Đại Nam','Trần Mỹ Ngọc','Nguyễn Anh Quân','Võ Văn Thúy Sơn','Đoàn Duy Thịnh','Đoàn Viên An Thy','Trần Thanh Tuấn','Văn Ngọc Thảo Vy','Phạm Minh Khôi','Lý Thu Hà','Hoàng Gia Huy','Bùi Thanh Tâm','Đặng Quốc Việt','Ngô Bảo Châu','Dương Khánh Linh','Huỳnh Tấn Phát'];
+    return {ok:true,
+      cls:{name:'CƠ SỞ DỮ LIỆU',term:'HK1 2026-2027',code:a[0].toUpperCase(),size:18,teacher:'Nguyễn Đặng Thế Vinh',leader:'Lê Đại Nam'},
+      sessions:Array.from({length:15},(_,i)=>({n:i+1,label:`Buổi ${i+1} · tuần ${12+i}/10`})),
+      students:names.map((n,i)=>({mssv:'9748260'+(4231+i*37),name:n,cls:i%3?'26CNTT':'26CVM'}))};
+  }
+  return {ok:true,message:'Đã gửi điểm danh (chế độ xem thử).'};
+}
+
+/* ========================= tiện ích ========================= */
+const $=s=>document.querySelector(s);
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function toast(m,ms=2600){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('on'),ms)}
+function show(id){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));$(id).classList.add('active')}
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ========================= CLIP LINH VẬT =========================
+   Clip (mp4, không tiếng) nằm trong thư mục assets. Ngoài Apps Script đọc ./assets/,
+   trong Apps Script đọc từ GitHub qua jsDelivr (Apps Script không lưu được file video).
+   Đổi REPO_BASE nếu bạn đổi repo/nhánh/thư mục. Có thể thử nhanh: ?device=phone hoặc ?device=pc          */
+const REPO_BASE='https://cdn.jsdelivr.net/gh/oanhvocungsi/siu-vip@main/assets/';
+const qs=new URLSearchParams(location.search);
+const ASSET_BASE=qs.get('assets')||(GAS?REPO_BASE:'assets/');
+const EXT=qs.get('ext')||'mp4';
+const PHONE=qs.has('device')?qs.get('device')==='phone':(matchMedia('(pointer:coarse)').matches||innerWidth<700);
+const SEEN=store.get('att_seen')==='1';
+const RATE=SEEN?1.7:1.25;            // tốc độ cảnh bay: lần đầu xem chậm, các lần sau nhanh hơn
+// Tên clip theo thiết bị: PC dùng bộ laptop, điện thoại dùng bộ điện thoại
+const CL=PHONE?{take:'phone-take',type:'phone-type',wrong:'phone-wrong',ok:'phone-ok',fly:'fly-phone'}
+              :{take:'lap-take',  type:'lap-type',  wrong:'lap-wrong',  ok:'lap-ok',  fly:'fly-lap'};
+const DUR={'idle':10,'lap-take':5.6,'lap-type':8,'lap-wrong':5.2,'lap-ok':5.2,'phone-take':7,'phone-type':8,'phone-wrong':5.2,'phone-ok':4.2,
+  'fly-ready':2.9,'fly-lap':6,'fly-phone':8,'arrive':4.8,'point':6.4};   // độ dài sau khi cắt, dùng làm đồng hồ dự phòng
+
+/* Một "sân khấu" gồm nhiều video xếp chồng; phát clip nào thì clip đó hiện lên (mờ dần), clip cũ mờ đi.
+   play() trả về 'ended' | 'cut' (bị clip khác chen vào) | 'error' (không tải được) */
+function makeStage(box, items){
+  const vids={}; let cur=null, stopPrev=null, tok=0;
+  items.forEach(it=>{
+    const v=document.createElement('video');
+    v.muted=true; v.defaultMuted=true; v.playsInline=true; v.loop=false; v.disablePictureInPicture=true;
+    v.setAttribute('playsinline',''); v.setAttribute('webkit-playsinline',''); v.setAttribute('muted','');
+    v.preload=it.preload||'metadata';
+    if(it.poster) v.poster=ASSET_BASE+it.poster;
+    if(it.cls) v.className=it.cls;
+    v.src=ASSET_BASE+it.file+'.'+EXT;
+    v._dur=DUR[it.file]||6;
+    box.appendChild(v); vids[it.key]=v;
+  });
+  function swap(v){
+    if(cur===v){v.classList.add('on');return}
+    const old=cur; cur=v; v.classList.add('on');
+    if(old){old.classList.remove('on'); setTimeout(()=>{ if(cur!==old) old.pause() },380)}
+  }
+  function play(key,{loop=false,rate=1}={}){
+    const v=vids[key], my=++tok;
+    if(stopPrev) stopPrev();
+    return new Promise(resolve=>{
+      let fin=false, timer, revealT;
+      const done=r=>{ if(fin)return; fin=true; clearTimeout(timer); clearTimeout(revealT); stopPrev=null;
+        v.removeEventListener('ended',onEnd); v.removeEventListener('error',onErr); resolve(r) };
+      const onEnd=()=>done('ended'), onErr=()=>done('error');
+      stopPrev=()=>done('cut');
+      v.addEventListener('ended',onEnd); v.addEventListener('error',onErr);
+      v.loop=loop; v.defaultPlaybackRate=rate; v.playbackRate=rate;
+      const reveal=()=>{ if(my===tok) swap(v) };
+      const start=()=>{
+        if(my!==tok) return;
+        try{v.currentTime=0}catch(e){}
+        if(reduce){ reveal(); if(!loop) timer=setTimeout(()=>done('ended'),500); return }
+        const p=v.play();
+        if(p&&p.catch) p.catch(()=>{});
+        if('requestVideoFrameCallback' in v) v.requestVideoFrameCallback(reveal); else v.addEventListener('playing',reveal,{once:true});
+        revealT=setTimeout(reveal,900);          // trình duyệt chặn tự phát: vẫn hiện khung đầu
+        if(!loop) timer=setTimeout(()=>done('ended'),(v._dur/rate+3)*1000);
+      };
+      if(v.readyState>=2) start();
+      else{ v.addEventListener('loadeddata',start,{once:true}); v.preload='auto'; v.load(); }
+    });
+  }
+  function warm(){ Object.values(vids).forEach(v=>{ if(v.preload!=='auto'){ v.preload='auto'; v.load() } }) }
+  function resume(){ if(cur&&cur.paused&&!cur.ended&&!reduce){const p=cur.play(); if(p&&p.catch)p.catch(()=>{})} }
+  function hideAll(){ stopPrev&&stopPrev(); tok++; Object.values(vids).forEach(v=>{v.classList.remove('on');v.pause()}); cur=null }
+  return {play,warm,resume,hideAll,vids};
+}
+// Một số trình duyệt (iOS chế độ tiết kiệm pin) chỉ cho phát sau lần chạm đầu tiên
+addEventListener('pointerdown',()=>{loginStage.resume();darkStage.resume()},{once:true,passive:true});
+
+const loginStage=makeStage($('#stage'),[
+  {key:'idle', file:'idle',   preload:'auto', poster:'idle.jpg'},
+  {key:'take', file:CL.take,  preload:'auto'},
+  {key:'type', file:CL.type,  preload:'auto'},
+  {key:'wrong',file:CL.wrong, preload:'metadata'}
+]);
+const darkStage=makeStage($('#dstage'),[
+  {key:'ready',  file:'fly-ready', cls:'full'+(PHONE?' zoom':'')},
+  {key:'fly',    file:CL.fly,      cls:'full'},
+  {key:'arrive', file:'arrive',    cls:'tall'},
+  {key:'point',  file:'point',     cls:'tall'}
+]);
+const cheerStage=makeStage($('#cheerStage'),[{key:'ok',file:CL.ok}]);
+
+/* ========================= LINH VẬT TRÊN MÀN ĐĂNG NHẬP =========================
+   idle  : mèo nằm trên chồng sách
+   take  : mèo lấy laptop / điện thoại ra (chạy một lần)
+   type  : mèo gõ phím liên tục (lặp)
+   wrong : mèo nhăn nhó rồi nằm xuống khi sai mã lớp / PIN                                   */
+let lstate='idle', lwarm=false;
+function goIdle(){ lstate='idle'; loginStage.play('idle',{loop:true}); }
+async function goType(){
+  if(!lwarm){lwarm=true;loginStage.warm();darkStage.warm()}
+  if(lstate!=='idle'&&lstate!=='wrong') return;
+  lstate='taking';
+  const r=await loginStage.play('take');
+  if(r==='cut'||lstate!=='taking') return;
+  lstate='typing'; loginStage.play('type',{loop:true});
+}
+async function goWrong(){
+  lstate='wrong';
+  const r=await loginStage.play('wrong');
+  if(r==='cut'||lstate!=='wrong') return;
+  await sleep(1800);
+  if(lstate==='wrong') goIdle();
+}
+goIdle();
+
+let pawSide=0;
+function throwLetter(ch,inp,px,py){
+  if(reduce||lstate!=='typing') return;
+  pawSide^=1;
+  const m=$('#stage').getBoundingClientRect();
+  const sx=m.left+m.width*(PHONE?(pawSide?.33:.40):(pawSide?.38:.46)), sy=m.top+m.height*.66;
+  const el=document.createElement('div'); el.className='flyletter';
+  el.textContent=inp.type==='password'?'•':ch; document.body.appendChild(el);
+  el.animate([
+    {transform:`translate(${sx}px,${sy}px) scale(1.5)`,opacity:1},
+    {transform:`translate(${(sx+px)/2}px,${Math.min(sy,py)-40}px) scale(1.2)`,opacity:1,offset:.5},
+    {transform:`translate(${px}px,${py-6}px) scale(.8)`,opacity:0}
+  ],{duration:560,easing:'ease-in'}).onfinish=()=>el.remove();
+}
+function caretPoint(inp){
+  const r=inp.getBoundingClientRect();
+  const w=Math.min(inp.value.length*9.5,r.width-70);
+  return [r.left+44+w, r.top+r.height/2];
+}
+function onType(e){
+  const inp=e.target; goType();
+  const [px,py]=caretPoint(inp);
+  if(e.inputType && e.inputType.startsWith('insert') && e.data) throwLetter(e.data,inp,px,py);
+}
+['classId','pin'].forEach(id=>{
+  const i=$('#'+id);
+  i.addEventListener('input',onType);
+  i.addEventListener('focus',()=>goType());
+});
+$('#classId').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('#pin').focus()}});
+$('#pin').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,6)});
+(function(){const c=store.get('att_class'); if(c){$('#classId').value=c}})();
+
+/* ========================= ĐĂNG NHẬP ========================= */
+let session=null;
+function flag(sel){const el=$(sel);el.classList.add('err');setTimeout(()=>el.classList.remove('err'),700)}
+function flash(){const f=$('#flash');f.classList.remove('go');void f.offsetWidth;f.classList.add('go')}
+
+$('#loginForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(lstate==='busy') return;
+  const classId=$('#classId').value.trim(), pin=$('#pin').value.trim();
+  $('#errMsg').textContent='';
+  let bad=false;
+  if(!classId){flag('#classId');bad=true}
+  if(!/^\d{6}$/.test(pin)){flag('#pin');bad=true}
+  if(bad){$('#errMsg').textContent='Vui lòng nhập đủ mã lớp và mã PIN 6 số.';goWrong();return}
+
+  lstate='busy'; $('#goBtn').disabled=true; $('#goBtn').textContent='Đang xử lý…';
+  document.activeElement&&document.activeElement.blur&&document.activeElement.blur();
+  const pRes=callGas('apiLogin',classId,pin).catch(()=>({ok:false,message:'Không kết nối được máy chủ. Thử lại sau.'}));
+
+  // 1) chớp sáng, chuyển sang màn tối: mèo chuẩn bị rồi bay đi (đang tìm lớp)
+  flash(); await sleep(140);
+  openDark();
+  await darkStage.play('ready',{rate:RATE});
+  const tFly=Date.now();
+  darkStage.play('fly',{loop:true,rate:1}); $('#flyMsg').classList.add('on');
+  const res=await pRes;
+  const left=1300-(Date.now()-tFly); if(left>0) await sleep(left);
+
+  // 2a) sai: quay lại màn đăng nhập, mèo buồn
+  if(!res||!res.ok){
+    flash(); await sleep(140);
+    closeDark(); show('#login');
+    $('#goBtn').disabled=false; $('#goBtn').textContent='Vào lớp →';
+    $('#errMsg').textContent=(res&&res.message)||'Đăng nhập không thành công.';
+    flag('#classId'); flag('#pin'); $('#pin').value='';
+    goWrong(); return;
+  }
+  // 2b) đúng: mèo bay tới chỗ cổng logo
+  if($('#remember').checked) store.set('att_class',classId); else store.del('att_class');
+  store.set('att_seen','1');
+  session={classId,pin,...res};
+  arrive();
+});
+
+/* ========================= CYBER ========================= */
+const cv=$('#fx'), ctx=cv.getContext('2d');
+let W,H,DPR,nodes=[],edges=[],t0c,bolts=[],rings=[],boost=0,fxRun=false,burstAt=0,pressed=false,done=false;
+const lb=$('#logoBtn');
+const LOGO_SRC=ASSET_BASE+'logo.png';
+$('#logoImg').src=LOGO_SRC;
+$('#logoImg').addEventListener('error',()=>{ $('#logoImg').src='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="#1e3a8a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M60 24 32 12 4 24l28 12 28-12z"/><path d="M16 30v14c8 6 24 6 32 0V30"/><path d="M60 24v16"/></svg>') },{once:true});
+
+function resize(){DPR=Math.min(2,devicePixelRatio||1);const c=$('#cyber');W=cv.width=c.clientWidth*DPR;H=cv.height=c.clientHeight*DPR;cv.style.width=c.clientWidth+'px';cv.style.height=c.clientHeight+'px'}
+// Cổng tròn trong clip arrive/point nằm ở (50%, 25.4%) của khung 9:16 cao bằng màn hình, đường kính lỗ ≈ 40% bề rộng khung
+function layoutCyber(){
+  const c=$('#cyber'), h=c.clientHeight, w=h*9/16, cx=c.clientWidth/2, cy=h*.2543, d=Math.round(w*.355);
+  $('#logoPos').style.cssText=`left:${cx}px;top:${cy}px`;
+  lb.style.width=lb.style.height=d+'px'; lb.style.margin=`${-d/2}px 0 0 ${-d/2}px`;
+  $('#hint').style.cssText=`left:${cx}px;top:${cy-d/2-10}px`;
+}
+addEventListener('resize',()=>{ if($('#cyber').classList.contains('active')){ layoutCyber(); if(fxRun){resize();buildNet()} } });
+function buildNet(){
+  nodes=[];edges=[];
+  const n=Math.round(Math.min(90,Math.max(40,innerWidth*innerHeight/14000)));
+  const cx=W/2,cy=H/2,R=Math.hypot(W,H)/2;
+  for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,d=Math.pow(Math.random(),.7)*R;nodes.push({x:cx+Math.cos(a)*d,y:cy+Math.sin(a)*d,d,p:Math.random()*6})}
+  const lim=Math.min(W,H)*.26;
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+    const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y; if(dx*dx+dy*dy<lim*lim)edges.push([i,j]);
+  }
+}
+function bolt(x,y,ang,len){
+  const pts=[[x,y]];let cx=x,cy=y;const seg=18*DPR;
+  for(let d=0;d<len;d+=seg){ang+=(Math.random()-.5)*.9;cx+=Math.cos(ang)*seg;cy+=Math.sin(ang)*seg;pts.push([cx,cy])}
+  return {pts,born:performance.now(),life:700+Math.random()*400,speed:1800*DPR};
+}
+function frame(now){
+  if(!fxRun) return;
+  const T=(now-t0c)/1000, cx=W/2, cy=H*.2543, R=Math.hypot(W,H)/2;
+  ctx.clearRect(0,0,W,H);
+  const reveal=Math.min(1,T/2.0)*R*1.05;      // lưới lan từ cổng logo ra ngoài
+  const bright=.45+boost*.9;
+  ctx.lineWidth=1.2*DPR; ctx.lineCap='round';
+  for(const [i,j] of edges){
+    const a=nodes[i],b=nodes[j]; const dm=Math.max(a.d,b.d); if(dm>reveal) continue;
+    const fl=.55+.45*Math.sin(T*3+a.p+b.p);
+    ctx.strokeStyle=`rgba(${80+boost*100|0},${190+boost*40|0},255,${Math.min(1,.28*fl*bright*1.6)})`;
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  }
+  for(const n of nodes){ if(n.d>reveal) continue;
+    const fl=.5+.5*Math.sin(T*4+n.p);
+    ctx.fillStyle=`rgba(150,225,255,${Math.min(1,(.4+.5*fl)*bright*1.3)})`;
+    ctx.beginPath();ctx.arc(n.x,n.y,(1.8+boost*1.5)*DPR,0,7);ctx.fill();
+  }
+  const gr=ctx.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*.45);
+  gr.addColorStop(0,`rgba(59,130,246,${.18+boost*.35})`);gr.addColorStop(1,'rgba(59,130,246,0)');
+  ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+  for(const r of rings){const k=(now-r.born)/r.life; if(k>=1||k<0)continue;
+    ctx.strokeStyle=`rgba(147,220,255,${(1-k)*.9})`;ctx.lineWidth=(3+6*(1-k))*DPR;
+    ctx.beginPath();ctx.arc(cx,cy,k*R*1.1,0,7);ctx.stroke();}
+  rings=rings.filter(r=>now-r.born<r.life);
+  ctx.shadowColor='#60a5fa';ctx.shadowBlur=14*DPR;
+  for(const b of bolts){
+    const age=now-b.born; if(age>b.life) continue;
+    const reach=Math.min(b.pts.length,Math.ceil(age/1000*b.speed/(18*DPR)))+1;
+    const fade=1-age/b.life;
+    ctx.strokeStyle=`rgba(224,242,254,${fade})`;ctx.lineWidth=(2+2*fade)*DPR;
+    ctx.beginPath();ctx.moveTo(b.pts[0][0],b.pts[0][1]);
+    for(let i=1;i<Math.min(reach,b.pts.length);i++)ctx.lineTo(b.pts[i][0],b.pts[i][1]);
+    ctx.stroke();
+  }
+  ctx.shadowBlur=0; bolts=bolts.filter(b=>now-b.born<b.life);
+  boost*=pressed?.99:.965; if(boost<.01)boost=0;
+  requestAnimationFrame(frame);
+}
+function openDark(){
+  show('#cyber'); const c=$('#cyber'); c.classList.remove('out','pressed');
+  $('#dstage').style.cssText=''; $('#logoPos').classList.remove('show'); $('#hint').classList.remove('on');
+  lb.getAnimations().forEach(a=>a.cancel()); lb.classList.remove('down');
+  $('#flyMsg').classList.remove('on'); layoutCyber();
+  fxRun=false; ctx.clearRect(0,0,cv.width,cv.height); done=false; pressed=false;
+}
+function closeDark(){ fxRun=false; darkStage.hideAll(); $('#flyMsg').classList.remove('on'); $('#logoPos').classList.remove('show'); $('#hint').classList.remove('on'); $('#cyber').classList.remove('active'); }
+async function arrive(){
+  // mèo bay vào, đáp xuống trước cổng; lưới điện sáng dần
+  $('#flyMsg').classList.remove('on');
+  resize(); buildNet(); t0c=performance.now(); fxRun=true; bolts=[];rings=[];boost=0;burstAt=0;
+  requestAnimationFrame(frame);
+  const r=await darkStage.play('arrive',{rate:RATE});
+  if(r==='cut') return;
+  // mèo quay lại chỉ vào cổng: sau ít giây thì logo hiện ra trong cổng
+  darkStage.play('point',{rate:1});
+  setTimeout(()=>{ if(!done){ $('#logoPos').classList.add('show'); $('#hint').classList.add('on'); } }, reduce?200:2300);
+}
+function press(){ if(done)return; pressed=true; lb.classList.add('down'); $('#cyber').classList.add('pressed'); boost=Math.max(boost,.5); }
+function release(){
+  if(done||!pressed)return; pressed=false; done=true; lb.classList.remove('down');
+  const now=performance.now(); burstAt=now; boost=1.4;
+  const cx=W/2,cy=H*.2543,R=Math.hypot(W,H)/2;
+  for(let i=0;i<22;i++)bolts.push(bolt(cx,cy,i/22*Math.PI*2+Math.random()*.3,R*(.9+Math.random()*.3)));
+  for(let i=0;i<3;i++)rings.push({born:now+i*160,life:1100});
+  // logo và mèo mờ dần theo chiều lan toả của tia điện
+  lb.animate([{opacity:1,transform:'scale(1)',filter:'blur(0)'},{opacity:0,transform:'scale(1.6)',filter:'blur(8px)'}],{duration:900,delay:200,fill:'forwards',easing:'ease-in'});
+  const ds=$('#dstage'); ds.style.transition='opacity 1s .25s ease-in'; ds.style.opacity='0';
+  setTimeout(()=>{$('#cyber').classList.add('out')},1300);
+  setTimeout(()=>{fxRun=false;show('#app');done=false;lb.getAnimations().forEach(a=>a.cancel());
+    $('#cyber').classList.remove('out'); closeDark(); $('#dstage').style.cssText=''; openApp()},2000);
+}
+lb.addEventListener('pointerdown',e=>{e.preventDefault();press()});
+addEventListener('pointerup',release);
+lb.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();press();setTimeout(release,160)}});
+lb.addEventListener('pointercancel',()=>{pressed=false;lb.classList.remove('down');$('#cyber').classList.remove('pressed')});
+
+/* ========================= ĐIỂM DANH ========================= */
+let marks={}; // mssv -> 'bad' | 'warn'
+function openApp(){
+  const s=session, c=s.cls||{};
+  $('#clsName').textContent=c.name||s.classId;
+  $('#clsMeta').innerHTML=[`${c.term||''} · ${c.code||s.classId} · Sĩ số ${(s.students||[]).length}`, c.teacher?`GV: ${c.teacher}`:'', c.leader?`Lớp trưởng: ${c.leader}`:''].filter(Boolean).join('<br>');
+  const sel=$('#session'); sel.innerHTML=(s.sessions||[{n:1,label:'Buổi 1'}]).map(x=>`<option value="${x.n}">${x.label}</option>`).join('');
+  $('#date').value=new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  marks={}; setMode('study'); $('#q').value=''; render(); scrollTo(0,0);
+}
+let mode='study';
+function setMode(m){mode=m;document.querySelectorAll('#seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===m));
+  $('#listArea').classList.toggle('hidden',m==='off'); updateSummary()}
+$('#seg').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setMode(b.dataset.v)});
+$('#session').addEventListener('change',()=>{updateSummary()});
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+  const q=$('#q').value.trim().toLowerCase(); const list=$('#list');
+  const arr=(session.students||[]).map((s,i)=>({...s,i})).filter(s=>!q||s.name.toLowerCase().includes(q)||String(s.mssv).includes(q));
+  list.innerHTML=arr.length?arr.map(s=>`
+    <div class="stu ${marks[s.mssv]||''}" data-id="${esc(s.mssv)}">
+      <div class="info"><div class="nm">${s.i+1}. ${esc(s.name)}</div><div class="id">${esc(s.mssv)} · ${esc(s.cls||'')}</div></div>
+      <button class="b-bad" data-a="bad">Không phép</button><button class="b-warn" data-a="warn">Có phép</button>
+    </div>`).join(''):'<div class="empty">Không tìm thấy sinh viên.</div>';
+  updateSummary();
+}
+$('#list').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return; const row=b.closest('.stu'), id=row.dataset.id, a=b.dataset.a;
+  if(marks[id]===a) delete marks[id]; else marks[id]=a;       // bấm lại để bỏ chọn
+  row.className='stu '+(marks[id]||''); updateSummary();
+});
+$('#q').addEventListener('input',render);
+function counts(){const total=(session.students||[]).length;let bad=0,warn=0;Object.values(marks).forEach(v=>v==='bad'?bad++:warn++);return{total,bad,warn,ok:total-bad-warn}}
+function updateSummary(){
+  if(!session)return; const c=counts(), n=$('#session').value||1;
+  $('#nOk').textContent=c.ok;$('#nBad').textContent=c.bad;$('#nWarn').textContent=c.warn;
+  $('#sumTop').textContent=`Buổi ${n} · ${mode==='study'?'Có học':'Giảng viên nghỉ'}`;
+  $('#sumBot').textContent=mode==='study'?`Có mặt ${c.ok}/${c.total} · Vắng ${c.bad+c.warn}`:'Không điểm danh buổi này';
+}
+$('#clearAll').addEventListener('click',()=>{marks={};render();toast('Đã bỏ chọn – cả lớp có mặt')});
+$('#reportWrong').addEventListener('click',async()=>{
+  const t=prompt('Mô tả điều sai trong danh sách lớp (thiếu/thừa sinh viên, sai tên…):'); if(!t)return;
+  try{await callGas('apiReportWrong',session.classId,t);toast('Đã gửi báo sai danh sách. Cảm ơn bạn!')}catch(e){toast('Gửi thất bại, thử lại sau.')}
+});
+$('#sendBtn').addEventListener('click',async()=>{
+  const c=counts();
+  if(mode==='study' && !confirm(`Gửi điểm danh?\nCó mặt ${c.ok} · Không phép ${c.bad} · Có phép ${c.warn}`))return;
+  const btn=$('#sendBtn'); btn.disabled=true; btn.textContent='Đang gửi…';
+  const payload={classId:session.classId,pin:session.pin,session:+$('#session').value,date:$('#date').value,mode,
+    absent:Object.entries(marks).map(([mssv,v])=>({mssv,type:v==='bad'?'KP':'CP'}))};
+  try{const r=await callGas('apiSubmit',payload);
+    if(r&&r.ok) celebrate((r.message)||'Đã gửi điểm danh. Cảm ơn bạn!'); else toast((r&&r.message)||'Gửi không thành công',3200)}
+  catch(e){toast('Lỗi kết nối, chưa gửi được.')}
+  btn.disabled=false;btn.textContent='Gửi';
+});
+// Gửi xong: mèo ăn mừng (clip lap-ok / phone-ok), chạm để đóng
+let cheerOn=false;
+async function celebrate(msg){
+  $('#cheerMsg').textContent=msg; $('#cheer').classList.add('on'); cheerOn=true;
+  const r=await cheerStage.play('ok');
+  if(r==='ended'&&cheerOn){ await sleep(1500); closeCheer() }
+}
+function closeCheer(){ if(!cheerOn)return; cheerOn=false; $('#cheer').classList.remove('on'); cheerStage.hideAll() }
+$('#cheer').addEventListener('click',closeCheer);
+$('#logoutBtn').addEventListener('click',()=>{
+  if(!confirm('Đổi sang lớp khác?'))return; session=null; $('#pin').value='';
+  show('#login'); $('#goBtn').disabled=false; $('#goBtn').textContent='Vào lớp →'; $('#errMsg').textContent='';
+  lstate='idle'; goIdle();
+});
+</script>
+</body>
+</html>
