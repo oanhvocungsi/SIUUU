@@ -1,31 +1,16 @@
-# Giao diện điểm danh SIU – bản có clip mèo
+# Điểm danh SIU – giao diện mèo mascot (video)
 
-## Gồm những gì
-- `index.html` – toàn bộ giao diện (đăng nhập → màn bay → cổng logo → điểm danh). Dán nguyên file vào Apps Script.
-- `Code.gs` – `doGet` + 3 hàm `apiLogin`, `apiSubmit`, `apiReportWrong` (đang để trống, bạn nối vào sheet).
-- `assets/` – 14 clip mp4 đã nén (~9 MB), ảnh poster `idle.jpg`, `logo.png`.
+## Cấu trúc
+- `apps-script/` : Code.gs, Index.html, Style.html, Script.html → dán vào dự án Apps Script (tên file giữ nguyên).
+- `assets/` : `logo.png`, `video/*.mp4` (14 clip), `poster/*.jpg` → upload vào repo `oanhvocungsi/siu-vip` thư mục `assets/` (nhánh main).
+- `preview-index.html` : bản một file để mở thử trên trình duyệt (dùng demo data).
 
-## Clip nào dùng ở đâu
-| Bước | PC | Điện thoại |
-|---|---|---|
-| Mèo nằm chờ (lặp) | `idle` | `idle` |
-| Bấm vào ô nhập: mèo lấy máy ra | `lap-take` | `phone-take` |
-| Đang gõ (lặp) | `lap-type` | `phone-type` |
-| Sai mã lớp / PIN | `lap-wrong` | `phone-wrong` |
-| Bấm "Vào lớp": chuẩn bị bay | `fly-ready` | `fly-ready` |
-| Đang tìm lớp (lặp) | `fly-lap` | `fly-phone` |
-| Bay tới cổng, đáp xuống | `arrive` | `arrive` |
-| Quay lại chỉ vào logo | `point` | `point` |
-| Gửi điểm danh xong | `lap-ok` | `phone-ok` |
+## Triển khai
+1. Upload `assets/` lên GitHub (ghi đè thư mục assets hiện có, giữ tên file).
+2. Apps Script: tạo 4 file như trên; trong Code.gs dán lại thân 3 hàm `apiLogin / apiSubmit / apiReportWrong` từ code cũ.
+3. Deploy → Web app. Nếu đổi repo/nhánh, sửa `ASSET_BASE` đầu Script.html.
+4. Sau khi đổi asset trên GitHub, jsDelivr cache ~12h: dùng `@<commit>` thay `@main` để cập nhật ngay.
 
-## Cài đặt
-1. Apps Script không lưu được video, nên đưa cả thư mục `assets/` lên GitHub repo `oanhvocungsi/siu-vip` (nhánh `main`, thư mục `assets/`). Nếu đổi repo thì sửa `REPO_BASE` ở đầu phần `<script>`.
-2. Apps Script: tạo file HTML tên `index` dán `index.html` vào; dán `Code.gs`; nối 3 hàm api.
-3. Deploy → Quản lý bản triển khai → Chỉnh sửa → Phiên bản mới.
-
-Lưu ý: jsDelivr lưu đệm file `@main` khoảng 12 giờ. Khi thay clip, mở `https://purge.jsdelivr.net/gh/oanhvocungsi/siu-vip@main/assets/<tên file>` để làm mới.
-
-## Chỉnh nhanh (đầu phần `<script>`)
-- `RATE`: tốc độ cảnh bay. Lần đầu 1.25, các lần sau 1.7 (đã xem rồi thì nhanh hơn).
-- Thử điện thoại trên máy tính: thêm `?device=phone` vào link; thử PC: `?device=pc`.
-- Mở thẳng `index.html` (cần chạy qua http, ví dụ `python -m http.server`): dùng dữ liệu mẫu, PIN `000000` sẽ báo sai.
+## Luồng
+Chọn thiết bị → mèo ngồi trên sách → bắt đầu gõ: lấy máy ra (`lay_*`) rồi gõ đồng bộ nhịp người dùng (`go_*`/`bam_dt`, tốc độ video theo tốc độ gõ) → Vào lớp: `chuan_bi_bay` → `bay1` → `nhan_logo` → `cho_logo` + nút logo → bấm/thả: tia sét → trang điểm danh. Sai PIN: `sai_*`. Gửi thành công: `*_thanh_cong`.
+`bay.mp4` chưa dùng (chuỗi bay đã đủ dài). Có nút "Bỏ qua ›"; tôn trọng prefers-reduced-motion. Chưa có âm thanh.
